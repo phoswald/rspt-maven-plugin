@@ -10,8 +10,10 @@ import java.nio.file.Paths;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.project.MavenProject;
 
 import phoswald.rspt.GeneratorJava;
 import phoswald.rspt.Grammar;
@@ -20,11 +22,15 @@ import phoswald.rspt.SyntaxException;
 @Mojo(name="generate", defaultPhase=LifecyclePhase.GENERATE_SOURCES)
 public class GeneratorMojo extends AbstractMojo {
 
+    @Component
+    private MavenProject project;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         getLog().info("Scanning for RSPT grammars...");
         Path sourceDir = Paths.get("src", "main", "rspt");
-        Path targetDir = Paths.get("target", "generated-sources");
+        Path targetDir = Paths.get("target", "generated-sources", "rspt");
+        project.addCompileSourceRoot(targetDir.toString());
         try {
             Files.list(sourceDir).forEach(sourceFile -> generate(sourceFile, targetDir));
         } catch (IOException e) {
