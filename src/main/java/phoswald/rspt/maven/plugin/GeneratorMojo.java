@@ -10,13 +10,14 @@ import java.nio.file.Paths;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 
 import phoswald.rspt.GeneratorJava;
 import phoswald.rspt.Grammar;
 import phoswald.rspt.SyntaxException;
 
-@Mojo(name="generate")
+@Mojo(name="generate", defaultPhase=LifecyclePhase.GENERATE_SOURCES)
 public class GeneratorMojo extends AbstractMojo {
 
     @Override
