@@ -6,6 +6,7 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -26,33 +27,36 @@ public class GeneratorMojo extends AbstractMojo {
     private MavenProject project;
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
+    public void execute() throws MojoFailureException, MojoExecutionException {
         getLog().info("Scanning for RSPT grammars...");
         Path sourceDir = Paths.get("src", "main", "rspt");
         Path targetDir = Paths.get("target", "generated-sources", "rspt");
         project.addCompileSourceRoot(targetDir.toString());
         try {
-            Files.list(sourceDir).forEach(sourceFile -> generate(sourceFile, targetDir));
+            for(Path sourceFile : Files.list(sourceDir).collect(Collectors.toList())) {
+                generate(sourceFile, targetDir);
+            }
         } catch (IOException e) {
-            getLog().error(e);
+            throw new MojoExecutionException("Failed to list source directory " + sourceDir, e);
         }
     }
 
-    private void generate(Path sourceFile, Path targetDir) {
-        try {
-            getLog().info("Reading grammar " + sourceFile);
-            try(Reader reader = Files.newBufferedReader(sourceFile)) {
-                Grammar grammar = new Grammar(reader);
-                Path targetFile = buildTarget(targetDir, grammar.getNamespace(), grammar.getParser());
-                getLog().info("Generating parser " + targetFile);
-                Files.createDirectories(targetFile.getParent());
-                try(Writer writer = Files.newBufferedWriter(targetFile)) {
-                    GeneratorJava generator = new GeneratorJava(grammar);
-                    generator.generate(writer);
-                }
+    private void generate(Path sourceFile, Path targetDir) throws MojoFailureException, MojoExecutionException {
+        getLog().info("Reading grammar " + sourceFile);
+        try(Reader reader = Files.newBufferedReader(sourceFile)) {
+            Grammar grammar = new Grammar(reader);
+            Path targetFile = buildTarget(targetDir, grammar.getNamespace(), grammar.getParser());
+            getLog().info("Generating parser " + targetFile);
+            Files.createDirectories(targetFile.getParent());
+            try(Writer writer = Files.newBufferedWriter(targetFile)) {
+                GeneratorJava generator = new GeneratorJava(grammar);
+                generator.generate(writer);
             }
-        } catch(IOException | SyntaxException | RuntimeException e) {
+        } catch(IOException e) {
             getLog().error(e);
+            throw new MojoExecutionException("Failed to read RSPT grammar " + sourceFile + " or write generated parser.", e);
+        } catch(SyntaxException e) {
+            throw new MojoFailureException("Syntax error in RSPT grammar " + sourceFile + ": " + e.getMessage());
         }
     }
 
