@@ -16,8 +16,8 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.project.MavenProject;
 
-import phoswald.rspt.GeneratorJava;
 import phoswald.rspt.Grammar;
+import phoswald.rspt.GrammarType;
 import phoswald.rspt.SyntaxException;
 
 @Mojo(name="generate", defaultPhase=LifecyclePhase.GENERATE_SOURCES)
@@ -44,13 +44,13 @@ public class GeneratorMojo extends AbstractMojo {
     private void generate(Path sourceFile, Path targetDir) throws MojoFailureException, MojoExecutionException {
         getLog().info("Reading grammar " + sourceFile);
         try(Reader reader = Files.newBufferedReader(sourceFile)) {
-            Grammar grammar = new Grammar(reader);
-            Path targetFile = buildTarget(targetDir, grammar.getNamespace(), grammar.getParser());
+            GrammarType type = GrammarType.JAVA;
+            Grammar grammar = type.createGrammar(reader);
+            Path targetFile = buildTarget(targetDir, grammar.getParserPackage(), grammar.getParserClass());
             getLog().info("Generating parser " + targetFile);
             Files.createDirectories(targetFile.getParent());
             try(Writer writer = Files.newBufferedWriter(targetFile)) {
-                GeneratorJava generator = new GeneratorJava(grammar);
-                generator.generate(writer);
+                type.createGenerator(grammar).generate(writer);
             }
         } catch(IOException e) {
             getLog().error(e);
